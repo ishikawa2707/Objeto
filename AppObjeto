@@ -1,0 +1,107 @@
+package Exrc1;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class AppObjeto {
+	
+	public static void main(String[] args) throws Exception {
+		Connection conexão = null; 
+		try {
+			conexão = abrirConexão();
+			criarTabelaObjeto(conexão);
+			truncarTabelaObjeto(conexão);			
+			inserirDoisMilObjetos(conexão);	
+			
+			long quantidadeDeObjeto = contarObjeto(conexão);			
+			
+			
+			System.out.println(quantidadeDeObjeto);
+			
+			listarNoConsoleOsObjetos(conexão);			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			conexão.close();
+		}
+		
+	}
+
+	private static void listarNoConsoleOsObjetos(Connection conexão) throws Exception {
+		Statement recuperarObjetos = null;
+		try {
+			recuperarObjetos = conexão.createStatement();
+			ResultSet resultado = recuperarObjetos.executeQuery("select id, nome from objeto");
+			System.out.println("Listando objetos...");
+			while (resultado.next()) {
+				System.out.println("> " + resultado.getString("nome") + ", id=" + resultado.getLong("id"));
+			}		
+			System.out.println("Listagem concluída.");
+		} finally {
+			recuperarObjetos.close();
+		}		
+	}
+
+
+	private static long contarObjeto(Connection conexão) throws Exception {
+		long quantidadeDeObjetos = 0;
+		Statement contarObjetos = null;
+		try {
+			contarObjetos = conexão.createStatement();
+			ResultSet resultado = contarObjetos.executeQuery("select count(*) as quantidade from objeto");
+			if (resultado.next()) {
+				quantidadeDeObjetos = resultado.getLong("quantidade");
+			}		
+		} finally {
+			contarObjetos.close();
+		}
+		return quantidadeDeObjetos;
+	}
+
+
+	private static void truncarTabelaObjeto(Connection conexão) throws Exception {
+		Statement truncarTabela = null;
+		try {
+			truncarTabela = conexão.createStatement();
+			truncarTabela.execute("truncate table objeto");
+		} finally {
+			truncarTabela.close();
+		}
+	}
+
+	private static void inserirDoisMilObjetos(Connection conexão) throws Exception {
+		PreparedStatement inserirObjeo = null;
+		try {
+			inserirObjeo = conexão.prepareStatement("insert into objeto (id, nome) values (?,?)");
+			for (int contador = 1; contador <= 2000; contador++) {
+				inserirObjeo.setLong(1, contador);
+				inserirObjeo.setString(2, "objeto " + contador);
+				inserirObjeo.execute();
+			}
+		} finally {
+			inserirObjeo.close();
+		}		
+	}
+
+	private static void criarTabelaObjeto(Connection conexão) throws Exception {
+		Statement criarTabela = null;
+		try {
+			criarTabela = conexão.createStatement();
+			criarTabela.execute("create table if not exists objeto ("
+					+ "id long not null primary key,"
+					+ "nome varchar(255) not null unique"
+					+ ")");
+		} finally {
+			criarTabela.close();
+		}
+	}
+
+	private static Connection abrirConexão() throws Exception {
+		Connection c = DriverManager.getConnection("jdbc:h2:~/objeto", "sa", "");
+		return c;
+	}
+
+}
